@@ -11,6 +11,9 @@ PROGRAMS = {
     "epiano": 5,
     "harpsichord": 6,
     "vibes": 11,
+    "glock": 9,
+    "music_box": 10,
+    "marimba": 12,
     "organ": 19,
     "rock_organ": 18,
     "nylon": 24,
@@ -26,11 +29,17 @@ PROGRAMS = {
     "synth_bass": 38,
     "strings": 48,
     "ensemble": 49,
+    "synth_strings": 50,
     "choir": 52,
+    "synth_voice": 54,
     "trumpet": 56,
     "sax": 65,
     "flute": 73,
+    "square_lead": 80,   # square synth lead — vocal-ish topline
+    "saw_lead": 81,      # sawtooth synth lead — bright arps / hooks
+    "synth_bass2": 39,
     "pad": 89,           # warm pad
+    "saw_pad": 90,
 }
 
 # Drum name -> GM percussion key number.
