@@ -1,0 +1,8 @@
+soundfonts/*.sf2
+out/*.wav
+out/*.raw.wav
+out/*.master.wav
+out/*.mid
+__pycache__/
+*.pyc
+.DS_Store
