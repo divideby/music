@@ -64,7 +64,11 @@ def render_layered(stems, out_ogg, soundfont=None, synth_gain=0.5,
         raw = out_ogg.with_suffix(f".s{i}.raw.wav")
         proc = out_ogg.with_suffix(f".s{i}.wav")
         _fluidsynth(st["mid"], raw, sf, synth_gain)
-        _run(["sox", str(raw), str(proc), *(st.get("fx") or ["gain", "0"])])
+        if st.get("board") is not None:                      # pedalboard amp/cab chain
+            from .amp import apply_board
+            apply_board(st["board"], raw, proc)
+        else:                                                # sox effect chain
+            _run(["sox", str(raw), str(proc), *(st.get("fx") or ["gain", "0"])])
         tmp += [raw, proc]
         processed.append(proc)
 

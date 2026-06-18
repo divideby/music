@@ -81,7 +81,7 @@ def _riff_for(name, chorus_idx):
     return [(0, "pr", "D2", 16)]                      # outro: let it ring
 
 
-def build():
+def build(rhythm_voices=("distortion", "overdrive"), lead_voice="overdrive"):
     tempo = 158
     guitar = Song(tempo=tempo, steps_per_bar=STEPS)   # rhythm stem (doubled)
     leadsong = Song(tempo=tempo, steps_per_bar=STEPS)  # lead stem
@@ -105,14 +105,14 @@ def build():
 
     # Double-track: same notes on distortion + overdrive (different seeds so the
     # humanize jitter differs slightly -> a wider, thicker unison).
-    guitar.add_part("gtrL", "distortion", gtr_notes, seed=61, humanize_time=3, humanize_vel=5)
-    guitar.add_part("gtrR", "overdrive", gtr_notes, seed=62, humanize_time=4, humanize_vel=6)
+    guitar.add_part("gtrL", rhythm_voices[0], gtr_notes, seed=61, humanize_time=3, humanize_vel=5)
+    guitar.add_part("gtrR", rhythm_voices[1], gtr_notes, seed=62, humanize_time=4, humanize_vel=6)
 
     lead = []
     for cs in HOOK_STARTS:
         for b4, s, n, d in HOOK:
             lead.append(((cs + b4) * STEPS + s, n, d, 110))
-    leadsong.add_part("lead", "overdrive", lead, seed=63, humanize_time=4, humanize_vel=5)
+    leadsong.add_part("lead", lead_voice, lead, seed=63, humanize_time=4, humanize_vel=5)
 
     band.add_part("bass", "pick_bass", bass_notes, seed=64, humanize_time=3, humanize_vel=5)
     _drums(band)

@@ -17,6 +17,10 @@ Direct file (download / hotlink): `https://cdn.jsdelivr.net/gh/divideby/music@ma
 - **mido** — build the MIDI from code
 - **FluidSynth** + **FluidR3_GM.sf2** — sampled GM instruments (live timbre, not oscillators)
 - **sox** + **ffmpeg** — mastering (normalize, warm tone, light reverb) and `.ogg` encode
+- **pedalboard** (`pip install pedalboard`) — guitar amp/cab modeling: render a clean
+  GM guitar as a DI, then distortion → **cabinet impulse-response convolution** →
+  compression (see `studio/amp.py`, IRs in `irs/`). The cab IR is what de-"midis"
+  a distorted tone. Used by `tracks/modern_rock_amp` (A/B against `modern_rock`).
 
 ## Layout
 
