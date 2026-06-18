@@ -21,6 +21,11 @@ Direct file (download / hotlink): `https://cdn.jsdelivr.net/gh/divideby/music@ma
   GM guitar as a DI, then distortion → **cabinet impulse-response convolution** →
   compression (see `studio/amp.py`, IRs in `irs/`). The cab IR is what de-"midis"
   a distorted tone. Used by `tracks/modern_rock_amp` (A/B against `modern_rock`).
+- **waveny + NAM** (optional, top rung) — a real **Neural Amp Modeler** capture for
+  the guitar amp. Clean DI → `waveny` (a .nam WaveNet model of a boosted 5150) →
+  cab IR. See `studio/nam.py` and `tracks/modern_rock_nam`. Setup: `./fetch-nam.sh`
+  for the model, and build the `waveny` CLI (instructions in that script). NAM is
+  mono / 24-bit / 48 kHz, handled in `studio/nam.py`.
 
 ## Layout
 

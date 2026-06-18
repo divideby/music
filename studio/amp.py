@@ -35,6 +35,19 @@ def guitar_board(ir="cab_modern.wav", drive=28.0, cascade=12.0,
     ])
 
 
+def cab_board(ir="cab_modern.wav", presence=2.0, presence_hz=3200,
+              rolloff_hz=11000, out_db=-5.0):
+    """Cabinet + light tone only — no distortion. For signals already amped
+    elsewhere (e.g. a NAM amp model via waveny), which output amp-only DI-cab."""
+    return Pedalboard([
+        PeakFilter(cutoff_frequency_hz=presence_hz, gain_db=presence, q=1.2),
+        Convolution(str(IR_DIR / ir), mix=1.0),
+        LowpassFilter(cutoff_frequency_hz=rolloff_hz),
+        Compressor(threshold_db=-18, ratio=2.5, attack_ms=6, release_ms=140),
+        Gain(gain_db=out_db),
+    ])
+
+
 def lead_board(ir="cab_vintage_bright.wav", drive=20.0, out_db=-8.0):
     """Brighter, less low-mid lead tone."""
     return Pedalboard([

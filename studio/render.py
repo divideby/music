@@ -37,20 +37,24 @@ def _run(cmd):
                    stderr=subprocess.DEVNULL)
 
 
-def _fluidsynth(mid, wav, sf, gain):
-    _run(["fluidsynth", "-ni", "-g", str(gain), "-r", "44100",
+def _fluidsynth(mid, wav, sf, gain, sample_rate=44100):
+    _run(["fluidsynth", "-ni", "-g", str(gain), "-r", str(sample_rate),
           "-F", str(wav), str(sf), str(mid)])
 
 
 def render_layered(stems, out_ogg, soundfont=None, synth_gain=0.5,
                    reverb=12, lowpass=18000, bass_gain=2, treble_gain=2,
-                   keep_wav=False):
-    """Render several MIDI stems, process each with its own sox chain, mix.
+                   sample_rate=44100, keep_wav=False):
+    """Render several MIDI stems, process each with its own chain, mix, master.
 
-    stems: list of {"mid": path, "fx": [sox effect args]}. Each stem is synth'd
-    separately so e.g. a heavy overdrive/EQ chain can fatten the guitar without
-    frying the drums. The mix is summed as 32-bit float (no clipping), then the
-    shared master chain + ogg encode run. Returns Path(out_ogg).
+    stems: list of dicts, each with "mid" and optionally:
+      "pre"   — callable(in_wav, out_wav) run right after synth (e.g. an external
+                amp-sim CLI like waveny; note it may require mono input).
+      "board" — a pedalboard.Pedalboard run on the (pre-processed) stem.
+      "fx"    — a sox effect-arg list (used when there's no board).
+    Each stem is synth'd separately, then conformed to stereo @ sample_rate so
+    mono amp-sim output mixes cleanly. The mix is summed as 32-bit float (no
+    clipping), then the shared master chain + ogg encode run. Returns Path.
     """
     _require("fluidsynth", "apt-get install fluidsynth")
     _require("sox", "apt-get install sox")
@@ -62,15 +66,24 @@ def render_layered(stems, out_ogg, soundfont=None, synth_gain=0.5,
     tmp, processed = [], []
     for i, st in enumerate(stems):
         raw = out_ogg.with_suffix(f".s{i}.raw.wav")
-        proc = out_ogg.with_suffix(f".s{i}.wav")
-        _fluidsynth(st["mid"], raw, sf, synth_gain)
+        _fluidsynth(st["mid"], raw, sf, synth_gain, sample_rate)
+        tmp.append(raw)
+        src = raw
+        if st.get("pre") is not None:                        # external pre-processor
+            pre = out_ogg.with_suffix(f".s{i}.pre.wav")
+            st["pre"](str(src), str(pre))
+            tmp.append(pre)
+            src = pre
+        proc = out_ogg.with_suffix(f".s{i}.proc.wav")
         if st.get("board") is not None:                      # pedalboard amp/cab chain
             from .amp import apply_board
-            apply_board(st["board"], raw, proc)
+            apply_board(st["board"], src, proc)
         else:                                                # sox effect chain
-            _run(["sox", str(raw), str(proc), *(st.get("fx") or ["gain", "0"])])
-        tmp += [raw, proc]
-        processed.append(proc)
+            _run(["sox", str(src), str(proc), *(st.get("fx") or ["gain", "0"])])
+        conf = out_ogg.with_suffix(f".s{i}.wav")             # conform for the mix
+        _run(["sox", str(proc), "-c", "2", "-r", str(sample_rate), str(conf)])
+        tmp += [proc, conf]
+        processed.append(conf)
 
     mix = out_ogg.with_suffix(".mix.wav")
     master = out_ogg.with_suffix(".master.wav")
