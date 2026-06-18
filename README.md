@@ -3,7 +3,14 @@
 Tracks are written as Python, rendered to audio on the server with no GUI/GPU,
 and published to GitHub Pages so you can listen and download in the browser.
 
-**Listen:** https://divideby.github.io/music/
+**Listen:** https://music-psi-lovat.vercel.app
+
+Direct file (download / hotlink): `https://cdn.jsdelivr.net/gh/divideby/music@main/out/lofi_intro.ogg`
+
+> Hosted on Vercel, not GitHub Pages: the `divideby.github.io` account has the
+> custom domain `divideby.ru`, so GitHub 301-redirects every `divideby.github.io/*`
+> project page to `divideby.ru/*` (Cloudflare), which doesn't serve this repo.
+> Vercel gives a clean working URL; jsDelivr serves the raw `.ogg` straight from git.
 
 ## Stack
 
@@ -27,7 +34,7 @@ index.html     the player page served by Pages
 ./fetch-soundfont.sh          # one-time: link FluidR3_GM.sf2
 ./render.sh lofi_intro        # build out/lofi_intro.ogg
 python3 -m unittest discover -s tests   # run tests
-./publish.sh "add a track"    # commit + push -> Pages rebuilds
+./publish.sh "add a track"    # commit + push to git AND deploy to Vercel
 ```
 
 Listen locally without Pages: `python3 -m http.server` then open

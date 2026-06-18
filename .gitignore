@@ -6,3 +6,4 @@ out/*.mid
 __pycache__/
 *.pyc
 .DS_Store
+.vercel
