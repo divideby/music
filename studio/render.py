@@ -38,11 +38,12 @@ def _run(cmd):
 
 
 def render(mid_path, out_ogg, soundfont=None, synth_gain=0.6,
-           reverb=35, lowpass=14000, keep_wav=False):
+           reverb=35, lowpass=14000, bass_gain=3, treble_gain=-2, keep_wav=False):
     """mid_path -> out_ogg. Returns Path(out_ogg).
 
-    Mastering chain (sox): peak-normalize, gentle low-pass + tone shaping for a
-    warm/lofi feel, a touch of reverb. Then ffmpeg encodes to Ogg Vorbis.
+    Mastering chain (sox): peak-normalize, tone shaping, low-pass, a touch of
+    reverb, then ffmpeg encodes to Ogg Vorbis. Defaults lean warm/lofi; pass
+    e.g. reverb=12, lowpass=16000, treble_gain=2 for a brighter, drier rock mix.
     """
     _require("fluidsynth", "apt-get install fluidsynth")
     _require("sox", "apt-get install sox")
@@ -60,7 +61,7 @@ def render(mid_path, out_ogg, soundfont=None, synth_gain=0.6,
           "-F", str(raw), str(sf), str(mid_path)])
 
     # 2) master: normalize, warm tone, light reverb
-    sox_fx = ["gain", "-n", "-1.5", "bass", "+3", "treble", "-2",
+    sox_fx = ["gain", "-n", "-1.5", "bass", str(bass_gain), "treble", str(treble_gain),
               "lowpass", str(lowpass), "reverb", str(reverb), "gain", "-n", "-1"]
     _run(["sox", str(raw), str(master), *sox_fx])
 

@@ -45,10 +45,10 @@ class Song:
 
     # ── parts ───────────────────────────────────────────────────────────
     def add_drums(self, lanes, bars, swing=0.0, vel=100,
-                  humanize_time=8, humanize_vel=12, seed=1):
-        """lanes: {drum_name: step_string}. The pattern repeats for `bars` bars.
-
-        Step-string velocity scales (x/X/o) ride on top of `vel`.
+                  humanize_time=8, humanize_vel=12, seed=1, start_bar=0):
+        """lanes: {drum_name: step_string}. The pattern repeats for `bars` bars,
+        starting at `start_bar` (use it to place crashes/fills on a section
+        downbeat). Step-string velocity scales (x/X/o) ride on top of `vel`.
         """
         st = self.step_ticks()
         events = []
@@ -59,7 +59,8 @@ class Song:
                 for i, scale in enumerate(scales):
                     if scale <= 0:
                         continue
-                    start = (b * self.spb + i) * st + pattern.swing_offset(i, st, swing)
+                    bar = start_bar + b
+                    start = (bar * self.spb + i) * st + pattern.swing_offset(i, st, swing)
                     v = max(1, min(127, int(vel * scale)))
                     events.append([start, st // 2, key, v])
         events = pattern.humanize(events, seed, humanize_time, humanize_vel)

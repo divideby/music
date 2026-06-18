@@ -12,10 +12,14 @@ PROGRAMS = {
     "harpsichord": 6,
     "vibes": 11,
     "organ": 19,
+    "rock_organ": 18,
     "nylon": 24,
     "steel": 25,
     "jazz_guitar": 26,
     "clean_guitar": 27,
+    "overdrive": 29,        # overdriven guitar — leads
+    "distortion": 30,       # distortion guitar — rhythm/power chords
+    "guitar_harmonics": 31,
     "finger_bass": 33,
     "pick_bass": 34,
     "fretless": 35,
