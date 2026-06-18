@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>music — headless studio</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    font: 16px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    color: #e7e3da;
+    background: radial-gradient(120% 120% at 50% 0%, #2a2438 0%, #161320 55%, #0d0b14 100%);
+    display: flex; justify-content: center;
+    padding: 6vh 5vw;
+  }
+  main { width: 100%; max-width: 640px; }
+  h1 { font-size: 1.5rem; margin: 0 0 .2rem; letter-spacing: .04em; }
+  .sub { color: #8f87a8; margin: 0 0 2.2rem; font-size: .85rem; }
+  .track {
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem 1.25rem;
+    margin-bottom: 1rem;
+    backdrop-filter: blur(6px);
+  }
+  .track .top { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+  .track h2 { font-size: 1.05rem; margin: 0; }
+  .meta { color: #8f87a8; font-size: .78rem; white-space: nowrap; }
+  .desc { color: #b3acc4; font-size: .82rem; margin: .35rem 0 .85rem; }
+  audio { width: 100%; height: 38px; margin-bottom: .7rem; border-radius: 8px; }
+  .dl { color: #c9a6ff; text-decoration: none; font-size: .8rem; }
+  .dl:hover { text-decoration: underline; }
+  footer { color: #5f5872; font-size: .72rem; margin-top: 2.5rem; }
+  footer a { color: #8f87a8; }
+</style>
+</head>
+<body>
+<main>
+  <h1>♪ music</h1>
+  <p class="sub">треки, написанные кодом · headless рендер (FluidSynth + GM) · слушать и качать</p>
+
+  <article class="track">
+    <div class="top">
+      <h2>lofi_intro</h2>
+      <span class="meta">lo-fi · 72 BPM · 0:42</span>
+    </div>
+    <p class="desc">Cmaj7–Am7–Dm7–G7 на родж-пиано, finger bass, свингованный кит и редкие вайбы.</p>
+    <audio controls preload="none" src="out/lofi_intro.ogg"></audio>
+    <a class="dl" href="out/lofi_intro.ogg" download>↓ скачать .ogg</a>
+  </article>
+
+  <footer>
+    собрано в <code>~/projects/music</code> · движок: <code>studio/</code> ·
+    исходник трека: <code>tracks/lofi_intro/track.py</code>
+  </footer>
+</main>
+</body>
+</html>
