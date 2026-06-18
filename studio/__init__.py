@@ -7,6 +7,6 @@ Song and calls render() — see tracks/<name>/track.py.
 """
 
 from .song import Song
-from .render import render
+from .render import render, render_layered
 
-__all__ = ["Song", "render"]
+__all__ = ["Song", "render", "render_layered"]

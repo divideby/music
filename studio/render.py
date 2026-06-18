@@ -37,6 +37,54 @@ def _run(cmd):
                    stderr=subprocess.DEVNULL)
 
 
+def _fluidsynth(mid, wav, sf, gain):
+    _run(["fluidsynth", "-ni", "-g", str(gain), "-r", "44100",
+          "-F", str(wav), str(sf), str(mid)])
+
+
+def render_layered(stems, out_ogg, soundfont=None, synth_gain=0.5,
+                   reverb=12, lowpass=18000, bass_gain=2, treble_gain=2,
+                   keep_wav=False):
+    """Render several MIDI stems, process each with its own sox chain, mix.
+
+    stems: list of {"mid": path, "fx": [sox effect args]}. Each stem is synth'd
+    separately so e.g. a heavy overdrive/EQ chain can fatten the guitar without
+    frying the drums. The mix is summed as 32-bit float (no clipping), then the
+    shared master chain + ogg encode run. Returns Path(out_ogg).
+    """
+    _require("fluidsynth", "apt-get install fluidsynth")
+    _require("sox", "apt-get install sox")
+    _require("ffmpeg", "apt-get install ffmpeg")
+    sf = _find_soundfont(soundfont)
+
+    out_ogg = Path(out_ogg)
+    out_ogg.parent.mkdir(parents=True, exist_ok=True)
+    tmp, processed = [], []
+    for i, st in enumerate(stems):
+        raw = out_ogg.with_suffix(f".s{i}.raw.wav")
+        proc = out_ogg.with_suffix(f".s{i}.wav")
+        _fluidsynth(st["mid"], raw, sf, synth_gain)
+        _run(["sox", str(raw), str(proc), *(st.get("fx") or ["gain", "0"])])
+        tmp += [raw, proc]
+        processed.append(proc)
+
+    mix = out_ogg.with_suffix(".mix.wav")
+    master = out_ogg.with_suffix(".master.wav")
+    tmp += [mix, master]
+    # sum as float to avoid inter-stem clipping, then master.
+    _run(["sox", "-m", *[str(p) for p in processed], "-b", "32",
+          "-e", "floating-point", str(mix)])
+    master_fx = ["gain", "-n", "-3", "bass", str(bass_gain), "treble", str(treble_gain),
+                 "lowpass", str(lowpass), "reverb", str(reverb), "gain", "-n", "-1"]
+    _run(["sox", str(mix), str(master), *master_fx])
+    _run(["ffmpeg", "-y", "-i", str(master), "-q:a", "5", str(out_ogg)])
+
+    if not keep_wav:
+        for p in tmp:
+            Path(p).unlink(missing_ok=True)
+    return out_ogg
+
+
 def render(mid_path, out_ogg, soundfont=None, synth_gain=0.6,
            reverb=35, lowpass=14000, bass_gain=3, treble_gain=-2, keep_wav=False):
     """mid_path -> out_ogg. Returns Path(out_ogg).
