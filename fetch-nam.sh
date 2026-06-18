@@ -7,6 +7,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 mkdir -p nam_models
-url="https://raw.githubusercontent.com/pelennor2170/NAM_models/main/Helga%20B%205150%20BlockLetter%20-%20Boosted.nam"
-curl -sL -o nam_models/5150_boosted.nam "$url"
-echo "fetched nam_models/5150_boosted.nam ($(du -h nam_models/5150_boosted.nam | cut -f1))"
+base="https://raw.githubusercontent.com/pelennor2170/NAM_models/main"
+# name -> source file in the NAM_models repo (high-gain captures)
+fetch() { curl -sL -o "nam_models/$1" "$base/$2"; echo "fetched nam_models/$1 ($(du -h nam_models/$1 | cut -f1))"; }
+fetch "ubermetal.nam"    "Jason%20Z%20Line%206%20UBERMETAL%20INSANE%20droom%20metal%20at%20its%20best.nam"
+fetch "5150_boosted.nam" "Helga%20B%205150%20BlockLetter%20-%20Boosted.nam"

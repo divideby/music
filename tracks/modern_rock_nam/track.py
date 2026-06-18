@@ -24,7 +24,7 @@ from studio import render_layered                  # noqa: E402
 from studio.amp import cab_board                    # noqa: E402
 from studio import nam                              # noqa: E402
 
-MODEL = ROOT / "nam_models" / "5150_boosted.nam"
+MODEL = ROOT / "nam_models" / "ubermetal.nam"
 
 _spec = importlib.util.spec_from_file_location(
     "modern_rock_track", ROOT / "tracks" / "modern_rock" / "track.py")
@@ -49,8 +49,8 @@ def main():
     b_mid = band.save(out.with_suffix(".band.mid"))
     ogg = render_layered(
         [
-            {"mid": g_mid, "pre": nam_pre(-6), "board": cab_board(ir="cab_modern.wav")},
-            {"mid": l_mid, "pre": nam_pre(-9), "board": cab_board(ir="cab_vintage_bright.wav",
+            {"mid": g_mid, "pre": nam_pre(-3), "board": cab_board(ir="cab_modern.wav")},
+            {"mid": l_mid, "pre": nam_pre(-6), "board": cab_board(ir="cab_vintage_bright.wav",
                                                                   presence=3.0, rolloff_hz=12000)},
             {"mid": b_mid, "fx": mr.BAND_FX},
         ],

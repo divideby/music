@@ -15,11 +15,16 @@ from pathlib import Path
 _DEVNULL = subprocess.DEVNULL
 
 
-def amp(in_wav, out_wav, model, norm_db=-6.0, sample_rate=48000):
-    """Process in_wav through the NAM `model`, writing out_wav. norm_db is the
-    DI peak fed into the amp (hotter = more saturation)."""
+def amp(in_wav, out_wav, model, norm_db=-6.0, out_norm_db=-1.0, sample_rate=48000):
+    """Process in_wav through the NAM `model`, writing out_wav.
+
+    norm_db: DI peak fed into the amp (hotter = more saturation).
+    out_norm_db: peak-normalize the amp output to this level. NAM models bake a
+    tiny head_scale (e.g. 0.02), so raw output is ~-27 dB and would be buried in
+    a mix — normalizing makes the (already distorted) guitar sit up front.
+    """
     base = str(out_wav)
-    raw16, nam_in = base + ".raw16", base + ".namin.wav"
+    raw16, nam_in, nam_raw = base + ".raw16", base + ".namin.wav", base + ".namraw.wav"
     subprocess.run(["sox", str(in_wav), "-c", "1", "-r", str(sample_rate),
                     "-b", "16", "-e", "signed-integer", "-t", "raw", raw16,
                     "gain", "-n", str(norm_db)],
@@ -38,8 +43,11 @@ def amp(in_wav, out_wav, model, norm_db=-6.0, sample_rate=48000):
     w.close()
 
     subprocess.run(["waveny", "process-rt", "-input", nam_in,
-                    "-output", str(out_wav), "-model", str(model)],
+                    "-output", nam_raw, "-model", str(model)],
                    check=True, stdout=_DEVNULL, stderr=_DEVNULL)
-    Path(raw16).unlink(missing_ok=True)
-    Path(nam_in).unlink(missing_ok=True)
+    # makeup: NAM output is very quiet (head_scale) -> normalize so it sits in the mix
+    subprocess.run(["sox", nam_raw, str(out_wav), "gain", "-n", str(out_norm_db)],
+                   check=True, stdout=_DEVNULL, stderr=_DEVNULL)
+    for p in (raw16, nam_in, nam_raw):
+        Path(p).unlink(missing_ok=True)
     return out_wav
