@@ -15,19 +15,31 @@ from pathlib import Path
 _DEVNULL = subprocess.DEVNULL
 
 
-def amp(in_wav, out_wav, model, norm_db=-6.0, out_norm_db=-1.0, sample_rate=48000):
+# A Tube-Screamer-style boost in FRONT of the amp: high-pass to tighten the lows
+# so palm mutes stay defined, a soft-clip overdrive that adds its own harmonics,
+# and a mid hump that pushes the amp's gain band. Driving the amp's *level* hotter
+# barely adds grit (the model compresses), but a real boost does — its harmonics
+# get fed in and re-saturated. This is the authentic "TS into a 5150" trick.
+TS_BOOST = ["highpass", "170", "overdrive", "12", "30", "equalizer", "760", "1.3q", "5"]
+
+
+def amp(in_wav, out_wav, model, norm_db=-6.0, out_norm_db=-1.0, boost=None,
+        sample_rate=48000):
     """Process in_wav through the NAM `model`, writing out_wav.
 
     norm_db: DI peak fed into the amp (hotter = more saturation).
     out_norm_db: peak-normalize the amp output to this level. NAM models bake a
     tiny head_scale (e.g. 0.02), so raw output is ~-27 dB and would be buried in
     a mix — normalizing makes the (already distorted) guitar sit up front.
+    boost: sox effect args applied to the DI BEFORE the amp (a pre-amp boost,
+    e.g. TS_BOOST). Adds drive that level alone can't. Normalize runs after it.
     """
     base = str(out_wav)
     raw16, nam_in, nam_raw = base + ".raw16", base + ".namin.wav", base + ".namraw.wav"
+    pre_fx = list(boost or []) + ["gain", "-n", str(norm_db)]
     subprocess.run(["sox", str(in_wav), "-c", "1", "-r", str(sample_rate),
                     "-b", "16", "-e", "signed-integer", "-t", "raw", raw16,
-                    "gain", "-n", str(norm_db)],
+                    *pre_fx],
                    check=True, stdout=_DEVNULL, stderr=_DEVNULL)
 
     raw = open(raw16, "rb").read()                 # 16-bit LE: lo,hi,lo,hi,...

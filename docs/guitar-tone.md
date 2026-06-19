@@ -38,11 +38,20 @@ guitar (program `clean_guitar`) as the DI, then in pedalboard:
 runs the chain per-stem so the cab/distortion never touches the drums.
 
 ### v3 — Neural Amp Modeler (the real-amp rung)
-`tracks/modern_rock_nam/track.py`, `studio/nam.py`. Clean DI → **waveny** (a Go CLI
-that runs a `.nam` WaveNet model of a real amp) → `amp.cab_board` (cab IR + tone +
-comp, *no* distortion — the amp model already provides gain). Pro chain. Models live
-in `nam_models/` (gitignored, `./fetch-nam.sh`); the `waveny` CLI is built from
-github.com/nlpodyssey/waveny.
+`tracks/modern_rock_nam/track.py`, `studio/nam.py`. Clean DI → **TS boost** →
+**waveny** (a Go CLI that runs a `.nam` WaveNet model of a real amp) → `amp.cab_board`
+(cab IR + tone + comp, *no* distortion — the amp model already provides gain). Pro
+chain. Models live in `nam_models/` (gitignored, `./fetch-nam.sh`); the `waveny` CLI
+is built from github.com/nlpodyssey/waveny.
+
+**Boost in front of the amp** (`nam.TS_BOOST`, passed via `nam.amp(boost=...)`): a
+Tube-Screamer-style `highpass 170 → overdrive → equalizer 760 +5` on the DI before
+the amp. Authentic "TS into a 5150". Note: on a steady **sine** it barely changes
+harmonics (the high-gain model is already saturation-limited), but on the real riff
+it measurably **tightens the lows** (<120 Hz −2 dB) and **pushes the grind/mids**
+(800–2500 Hz +0.7 dB) → more defined and aggressive. Lesson: verify a *boost* with
+band-energy on the actual riff, not the sine-harmonic test (which only proves the
+amp distorts at all).
 
 ## Gotchas that cost time
 
@@ -119,7 +128,7 @@ Higher = more gain/saturation. Measured via the sine recipe above.
 ## Ceiling & next rungs
 
 Even v3 is "a good MIDI guitar through a real amp model", not a played guitar — we
-have no real DI. Further options if asked: a higher-gain NAM model (Engl Savage), a
-boost/overdrive *in front of* the amp ("TS into a 5150"), stacking NAM + a touch of
-pedalboard distortion, or hosting a real amp-sim VST3 via pedalboard (JUCE headless
-may need xvfb).
+have no real DI. v3 already has the **TS boost** (above). Further options if asked: a
+higher-gain NAM model (Engl Savage — the most saturated in the table), stacking NAM +
+a touch of pedalboard distortion after the amp, or hosting a real amp-sim VST3 via
+pedalboard (JUCE headless may need xvfb).

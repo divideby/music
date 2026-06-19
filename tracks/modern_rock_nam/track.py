@@ -32,10 +32,15 @@ mr = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(mr)
 
 
-def nam_pre(norm_db):
-    """Build a pre-processor: stereo DI -> mono 24-bit -> NAM amp model."""
+def nam_pre(norm_db, boost=None):
+    """Build a pre-processor: stereo DI -> mono 24-bit -> (boost) -> NAM amp."""
     return lambda in_wav, out_wav: nam.amp(
-        in_wav, out_wav, MODEL, norm_db=norm_db, sample_rate=48000)
+        in_wav, out_wav, MODEL, norm_db=norm_db, boost=boost, sample_rate=48000)
+
+
+# Rhythm gets the full Tube-Screamer boost into the amp; lead a lighter push.
+RHYTHM_BOOST = nam.TS_BOOST
+LEAD_BOOST = ["highpass", "200", "overdrive", "7", "30", "equalizer", "900", "1.4q", "3"]
 
 
 def main():
@@ -49,9 +54,9 @@ def main():
     b_mid = band.save(out.with_suffix(".band.mid"))
     ogg = render_layered(
         [
-            {"mid": g_mid, "pre": nam_pre(-3), "board": cab_board(ir="cab_modern.wav")},
-            {"mid": l_mid, "pre": nam_pre(-6), "board": cab_board(ir="cab_vintage_bright.wav",
-                                                                  presence=3.0, rolloff_hz=12000)},
+            {"mid": g_mid, "pre": nam_pre(-3, RHYTHM_BOOST), "board": cab_board(ir="cab_modern.wav")},
+            {"mid": l_mid, "pre": nam_pre(-6, LEAD_BOOST), "board": cab_board(ir="cab_vintage_bright.wav",
+                                                                              presence=3.0, rolloff_hz=12000)},
             {"mid": b_mid, "fx": mr.BAND_FX},
         ],
         out.with_suffix(".ogg"),
