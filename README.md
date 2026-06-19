@@ -1,7 +1,11 @@
 # music — headless code-first studio
 
 Tracks are written as Python, rendered to audio on the server with no GUI/GPU,
-and published to GitHub Pages so you can listen and download in the browser.
+and published online (Vercel) so you can listen and download in the browser.
+
+> **For agents / contributors:** read [CLAUDE.md](CLAUDE.md) for conventions and
+> gotchas, and [docs/guitar-tone.md](docs/guitar-tone.md) for the guitar-tone
+> ladder (sox → pedalboard+cab IR → NAM) and how to verify tone with no playback.
 
 **Listen:** https://music-psi-lovat.vercel.app
 
@@ -21,11 +25,12 @@ Direct file (download / hotlink): `https://cdn.jsdelivr.net/gh/divideby/music@ma
   GM guitar as a DI, then distortion → **cabinet impulse-response convolution** →
   compression (see `studio/amp.py`, IRs in `irs/`). The cab IR is what de-"midis"
   a distorted tone. Used by `tracks/modern_rock_amp` (A/B against `modern_rock`).
-- **waveny + NAM** (optional, top rung) — a real **Neural Amp Modeler** capture for
-  the guitar amp. Clean DI → `waveny` (a .nam WaveNet model of a boosted 5150) →
-  cab IR. See `studio/nam.py` and `tracks/modern_rock_nam`. Setup: `./fetch-nam.sh`
-  for the model, and build the `waveny` CLI (instructions in that script). NAM is
-  mono / 24-bit / 48 kHz, handled in `studio/nam.py`.
+- **waveny + NAM** (top rung) — a real **Neural Amp Modeler** capture for the guitar
+  amp. Clean DI → `waveny` (a `.nam` WaveNet model of a high-gain amp) → cab IR. See
+  `studio/nam.py` and `tracks/modern_rock_nam`. Setup: `./fetch-nam.sh` for the models,
+  and build the `waveny` CLI (instructions in that script). NAM is mono / 24-bit /
+  48 kHz with a quiet `head_scale` — quirks and the "no overdrive" fix are documented
+  in [docs/guitar-tone.md](docs/guitar-tone.md).
 
 ## Layout
 
@@ -34,7 +39,9 @@ studio/        engine — notes, pattern, instruments (pure, tested) + song, ren
 tracks/<name>/track.py   one declarative script per track
 out/           rendered audio (.ogg committed; .wav/.mid ignored)
 tests/         unittest for the pure modules + a render smoke test
-index.html     the player page served by Pages
+index.html     the player page served by Vercel
+irs/           cabinet impulse responses · nam_models/ NAM captures (gitignored)
+docs/          guitar-tone.md (the tone ladder) + superpowers/specs (design)
 ```
 
 ## Use
