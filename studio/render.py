@@ -47,7 +47,9 @@ def render_layered(stems, out_ogg, soundfont=None, synth_gain=0.5,
                    sample_rate=44100, master_fx=None, keep_wav=False):
     """Render several MIDI stems, process each with its own chain, mix, master.
 
-    stems: list of dicts, each with "mid" and optionally:
+    stems: list of dicts, each with "mid" (a MIDI file to synth) OR "wav" (a
+    pre-rendered audio bed, e.g. procedural noise from studio.noise — used
+    as-is instead of synthesising), and optionally:
       "pre"   — callable(in_wav, out_wav) run right after synth (e.g. an external
                 amp-sim CLI like waveny; note it may require mono input).
       "board" — a pedalboard.Pedalboard run on the (pre-processed) stem.
@@ -71,7 +73,10 @@ def render_layered(stems, out_ogg, soundfont=None, synth_gain=0.5,
     tmp, processed = [], []
     for i, st in enumerate(stems):
         raw = out_ogg.with_suffix(f".s{i}.raw.wav")
-        _fluidsynth(st["mid"], raw, sf, synth_gain, sample_rate)
+        if st.get("wav") is not None:                        # pre-rendered audio bed
+            _run(["sox", str(st["wav"]), str(raw)])
+        else:
+            _fluidsynth(st["mid"], raw, sf, synth_gain, sample_rate)
         tmp.append(raw)
         src = raw
         if st.get("pre") is not None:                        # external pre-processor

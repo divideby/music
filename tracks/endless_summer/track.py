@@ -27,6 +27,7 @@ sys.path.insert(0, str(ROOT))
 
 from studio import Song, render_layered    # noqa: E402
 from studio.notes import chord, note_to_midi   # noqa: E402
+from studio.noise import rain as rain_bed    # noqa: E402
 
 STEPS = 16
 TEMPO = 75
@@ -196,7 +197,7 @@ def build():
             swing=0.0, vel=54, humanize_time=10, humanize_vel=12, seed=7,
         )
         stems["drums"] = drm
-    return stems
+    return stems, total_bars
 
 
 def pan(p):
@@ -245,11 +246,24 @@ FX = {
 ORDER = ["pad", "strings", "piano", "bass", "drums", "box", "glock"]
 
 
+# Rain bed: subtle, stereo, sitting under the music. Fades in over 4s and out
+# over the last 6s so it breathes with the track rather than just stopping.
+RAIN_FX = ["highpass", "300", "lowpass", "9500", "gain", "-13",
+           "fade", "t", "4", "0", "6"]
+
+
 def main():
     out = ROOT / "out" / "endless_summer"
-    songs = build()
+    songs, total_bars = build()
+
+    # Procedural rain bed matched to the track length (+ a little tail to ring
+    # under the master reverb). Seeded -> deterministic.
+    seconds = total_bars * 4 * 60.0 / TEMPO
+    rain_wav = rain_bed(out.with_suffix(".rain.wav"), seconds + 3.0, seed=1)
 
     mids, stems = [], []
+    # The rain goes in first, as a bed.
+    stems.append({"wav": rain_wav, "fx": RAIN_FX})
     for name in ORDER:
         if name not in songs:
             continue
@@ -270,7 +284,7 @@ def main():
         "compand", "0.15,0.6", "6:-50,-48,-26,-18,-10,-7", "4",
         # fast soft-knee limiter on the peaks
         "compand", "0.002,0.08", "3:-12,-9,-2,-2,0,-1.5", "0",
-        "gain", "-n", "-1",                                  # final peak ceiling
+        "gain", "-n", "-1.5",                                # final peak ceiling
     ]
     ogg = render_layered(
         stems, out.with_suffix(".ogg"),
@@ -278,6 +292,7 @@ def main():
     )
     for m in mids:
         Path(m).unlink(missing_ok=True)
+    Path(rain_wav).unlink(missing_ok=True)
     print(f"rendered {ogg}")
 
 
