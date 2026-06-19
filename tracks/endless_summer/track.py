@@ -246,10 +246,10 @@ FX = {
 ORDER = ["pad", "strings", "piano", "bass", "drums", "box", "glock"]
 
 
-# Rain bed: subtle, stereo, sitting under the music. Fades in over 4s and out
-# over the last 6s so it breathes with the track rather than just stopping.
-RAIN_FX = ["highpass", "300", "lowpass", "9500", "gain", "-13",
-           "fade", "t", "4", "0", "6"]
+# Rain bed: subtle, stereo, well under the music (it's atmosphere, not a layer).
+# Tone is already shaped in studio.noise.rain; here we just set the level and a
+# gentle top roll-off, with a 4s fade-in and 6s fade-out so it breathes.
+RAIN_FX = ["lowpass", "7000", "gain", "-20", "fade", "t", "4", "0", "6"]
 
 
 def main():
