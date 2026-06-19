@@ -44,7 +44,7 @@ def _fluidsynth(mid, wav, sf, gain, sample_rate=44100):
 
 def render_layered(stems, out_ogg, soundfont=None, synth_gain=0.5,
                    reverb=12, lowpass=18000, bass_gain=2, treble_gain=2,
-                   sample_rate=44100, keep_wav=False):
+                   sample_rate=44100, master_fx=None, keep_wav=False):
     """Render several MIDI stems, process each with its own chain, mix, master.
 
     stems: list of dicts, each with "mid" and optionally:
@@ -55,6 +55,11 @@ def render_layered(stems, out_ogg, soundfont=None, synth_gain=0.5,
     Each stem is synth'd separately, then conformed to stereo @ sample_rate so
     mono amp-sim output mixes cleanly. The mix is summed as 32-bit float (no
     clipping), then the shared master chain + ogg encode run. Returns Path.
+
+    master_fx: optional sox effect-arg list that REPLACES the default 2-bus
+    chain (normalize + tone + lowpass + reverb + normalize). Pass this to add
+    real bus glue/limiting (e.g. `compand`) for a denser, louder master; when
+    None the default chain runs (so existing tracks are unaffected).
     """
     _require("fluidsynth", "apt-get install fluidsynth")
     _require("sox", "apt-get install sox")
@@ -91,8 +96,10 @@ def render_layered(stems, out_ogg, soundfont=None, synth_gain=0.5,
     # sum as float to avoid inter-stem clipping, then master.
     _run(["sox", "-m", *[str(p) for p in processed], "-b", "32",
           "-e", "floating-point", str(mix)])
-    master_fx = ["gain", "-n", "-3", "bass", str(bass_gain), "treble", str(treble_gain),
-                 "lowpass", str(lowpass), "reverb", str(reverb), "gain", "-n", "-1"]
+    if master_fx is None:
+        master_fx = ["gain", "-n", "-3", "bass", str(bass_gain),
+                     "treble", str(treble_gain), "lowpass", str(lowpass),
+                     "reverb", str(reverb), "gain", "-n", "-1"]
     _run(["sox", str(mix), str(master), *master_fx])
     _run(["ffmpeg", "-y", "-i", str(master), "-q:a", "5", str(out_ogg)])
 

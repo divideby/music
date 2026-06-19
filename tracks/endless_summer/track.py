@@ -18,13 +18,14 @@ washed-out (heavy reverb, gentle low-pass) for that tape/lo-fi haze.
 Determinism: every part takes a seed; same code -> same MIDI -> same audio.
 """
 
+import math
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from studio import Song, render            # noqa: E402
+from studio import Song, render_layered    # noqa: E402
 from studio.notes import chord, note_to_midi   # noqa: E402
 
 STEPS = 16
@@ -100,8 +101,6 @@ def soft_bass(base, root_name, vel=64):
 
 
 def build():
-    song = Song(tempo=TEMPO, steps_per_bar=STEPS)
-
     pad, strings, box, glock, piano, bass = [], [], [], [], [], []
 
     # (name, progression, melody, do_box, do_strings, do_glock, do_piano, do_bass)
@@ -165,22 +164,28 @@ def build():
     bass.append((last_base, note_to_midi("Ab1"), STEPS, 52))
     box.append((last_base, note_to_midi("Ab5"), 12, 44))
 
+    # Each instrument becomes its OWN stem (own Song) so render_layered can
+    # mix it individually — panned, balanced, EQ'd, with its own reverb send.
     # Long, loose humanize for a dreamy, un-quantized haze. No swing.
-    song.add_part("pad", "pad", pad, humanize_time=12, humanize_vel=8, seed=11)
-    song.add_part("strings", "synth_strings", strings,
-                  humanize_time=14, humanize_vel=6, seed=13)
-    song.add_part("piano", "piano", piano,
-                  humanize_time=10, humanize_vel=10, seed=21)
-    song.add_part("box", "music_box", box,
-                  humanize_time=11, humanize_vel=10, seed=31)
-    song.add_part("glock", "glock", glock,
-                  humanize_time=9, humanize_vel=8, seed=41)
-    song.add_part("bass", "finger_bass", bass,
-                  humanize_time=8, humanize_vel=7, seed=51)
+    def one(voice, notes, **hz):
+        s = Song(tempo=TEMPO, steps_per_bar=STEPS)
+        s.add_part(voice, voice, notes, **hz)
+        return s
 
-    # Gentle half-time lo-fi beat under the middle sections only.
+    stems = {
+        "pad":     one("pad", pad, humanize_time=12, humanize_vel=8, seed=11),
+        "strings": one("synth_strings", strings,
+                       humanize_time=14, humanize_vel=6, seed=13),
+        "piano":   one("piano", piano, humanize_time=10, humanize_vel=10, seed=21),
+        "box":     one("music_box", box, humanize_time=11, humanize_vel=10, seed=31),
+        "glock":   one("glock", glock, humanize_time=9, humanize_vel=8, seed=41),
+        "bass":    one("finger_bass", bass, humanize_time=8, humanize_vel=7, seed=51),
+    }
+
+    # Gentle half-time lo-fi beat under the middle sections only — its own stem.
     if drums_start is not None:
-        song.add_drums(
+        drm = Song(tempo=TEMPO, steps_per_bar=STEPS)
+        drm.add_drums(
             {
                 "kick":   "X . . . . . . . . . . . o . . .",
                 "rim":    ". . . . . . . . X . . . . . . .",
@@ -190,17 +195,89 @@ def build():
             bars=drums_end - drums_start, start_bar=drums_start,
             swing=0.0, vel=54, humanize_time=10, humanize_vel=12, seed=7,
         )
-    return song
+        stems["drums"] = drm
+    return stems
+
+
+def pan(p):
+    """Constant-power pan of a mono-collapsed stem. p in [-1 (L) .. +1 (R)].
+
+    Collapses the stem to mono, then spreads it across L/R with cos/sin gains
+    so total power stays constant as it moves across the field.
+    """
+    a = (p + 1) / 2 * (math.pi / 2)
+    return ["channels", "1", "remix", "-m", f"1v{math.cos(a):.3f}", f"1v{math.sin(a):.3f}"]
+
+
+# ── Per-stem mix chains (sox effect args). This IS the mix: placement (pan),
+# balance (gain dB), tone (EQ/filters), and an individual reverb "send" per
+# instrument. reverb args = reverberance HF-damp room-scale stereo pre-delay;
+# darker/bigger = hall (pads), brighter/smaller = plate (bells/lead). ───────
+FX = {
+    # Warm bed: kept stereo for width, rolled-off top, low-mid body, big HALL.
+    "pad": ["highpass", "50", "lowpass", "8500", "equalizer", "320", "1q", "2",
+            "gain", "-3", "reverb", "62", "45", "100", "100", "18"],
+    # Airy upper layer: high-passed above the pad, soft top, even bigger hall.
+    "strings": ["highpass", "220", "treble", "2", "gain", "-7",
+                "reverb", "66", "35", "100", "100", "22"],
+    # Arpeggios: panned LEFT, presence around 2.6 kHz, medium plate.
+    "piano": pan(-0.45) + ["highpass", "110", "equalizer", "2600", "1.2q", "1.5",
+                           "gain", "-4", "reverb", "34", "28", "55", "100", "6"],
+    # Music-box lead: near-centre, forward, bright plate + a soft dreamy slap echo.
+    "box": pan(0.12) + ["highpass", "250", "equalizer", "3200", "1q", "2.5",
+                        "gain", "1", "echo", "0.85", "0.55", "260", "0.3",
+                        "reverb", "42", "22", "55", "100", "0"],
+    # Glock twinkle: panned RIGHT (mirrors the piano), soft, bright, long plate.
+    "glock": pan(0.5) + ["highpass", "500", "gain", "-9",
+                         "reverb", "58", "20", "60", "100", "0"],
+    # Bass: centred + MONO, tight low-pass, low-mid bump, glue compression,
+    # almost dry (keeps the low end solid, not washy).
+    "bass": pan(0.0) + ["lowpass", "3500", "equalizer", "110", "1q", "2",
+                        "compand", "0.05,0.3", "6:-42,-32,-18,-10,-6,-5", "-2",
+                        "gain", "-2", "reverb", "5"],
+    # Drums: stereo, glue compression for punch/evenness, short room.
+    "drums": ["compand", "0.005,0.12", "6:-48,-40,-24,-14,-8,-6", "-3",
+              "equalizer", "95", "1q", "2", "treble", "1", "gain", "-2",
+              "reverb", "20", "30", "40", "100", "0"],
+}
+
+# Mix order (purely cosmetic for the sum): beds, support, rhythm, then leads.
+ORDER = ["pad", "strings", "piano", "bass", "drums", "box", "glock"]
 
 
 def main():
     out = ROOT / "out" / "endless_summer"
-    song = build()
-    mid = song.save(out.with_suffix(".mid"))
-    # Very warm, washed-out master: heavy reverb haze + gentle low-pass for
-    # that tape/lo-fi nostalgia, soft top end.
-    ogg = render(mid, out.with_suffix(".ogg"),
-                 reverb=52, lowpass=12500, bass_gain=3, treble_gain=-3)
+    songs = build()
+
+    mids, stems = [], []
+    for name in ORDER:
+        if name not in songs:
+            continue
+        mid = songs[name].save(out.with_suffix(f".{name}.mid"))
+        mids.append(mid)
+        stems.append({"mid": mid, "fx": FX[name]})
+
+    # Mix + master. Per-stem chains place/balance/EQ each instrument; the 2-bus
+    # master then GLUES the result: warm tone, a light shared room, bus
+    # compression to pull the body up (the reverb sends dilute RMS otherwise),
+    # then a fast soft-knee "limiter" catching the peaks, and peak-normalize.
+    # Kept musical, not brickwalled — it's dreamy ambient, dynamics matter.
+    master_fx = [
+        "gain", "-n", "-6",                                  # headroom for comp
+        "bass", "3", "treble", "-2", "lowpass", "13500",     # warm tone
+        "reverb", "10",                                      # light glue room
+        # bus glue: gentle ~2:1 above ~-26 dB, with makeup gain
+        "compand", "0.15,0.6", "6:-50,-48,-26,-18,-10,-7", "4",
+        # fast soft-knee limiter on the peaks
+        "compand", "0.002,0.08", "3:-12,-9,-2,-2,0,-1.5", "0",
+        "gain", "-n", "-1",                                  # final peak ceiling
+    ]
+    ogg = render_layered(
+        stems, out.with_suffix(".ogg"),
+        synth_gain=0.5, master_fx=master_fx,
+    )
+    for m in mids:
+        Path(m).unlink(missing_ok=True)
     print(f"rendered {ogg}")
 
 
