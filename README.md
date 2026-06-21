@@ -1,5 +1,13 @@
 # music — headless code-first studio
 
+> [!NOTE]
+> **Archived / read-only.** The reusable studio **skills** now live in
+> [`divideby/skills`](https://github.com/divideby/skills) (install with
+> `npx skills add divideby/skills`) — the engine and pipeline scripts ship
+> bundled inside the `writing-music` skill there. This repo (engine source,
+> tracks, renders) is kept for history; the live site keeps serving its last
+> deploy. To resume active work, `gh repo unarchive divideby/music`.
+
 Tracks are written as Python, rendered to audio on the server with no GUI/GPU,
 and published online (Vercel) so you can listen and download in the browser.
 
